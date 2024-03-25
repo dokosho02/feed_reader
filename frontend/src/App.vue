@@ -1,19 +1,18 @@
 <template>
 
   <div id="app">
-    <!-- 加载动画 -->
+    <!-- loading animation -->
     <div v-if="loading" class="loading-overlay">
       <div class="loading">
         <div class="loader"></div>
         <div>Loading...</div>
-        <div>{{ loadingTime }}</div> <!-- 加载时间 -->
+        <div>{{ loadingTime }}</div>
       </div>
     </div>
     
       <div class="column" id="first-column">
 
           <div class="icons-container">
-              <!-- 预留一个位置给app 图标 -->
 
               <span>&#x2026;</span>
               <!-- <span>&#x25C9;</span>
@@ -21,8 +20,6 @@
               <span>&#x1F4D6;</span> -->
 
           </div>
-
-
 
           <!-- Display groups -->
           <span v-for="(group, index) in feedGroups" :key="index">
@@ -55,7 +52,6 @@
       <div class="column" id="second-column">
           <div v-if="selectedFeed">
               <div class="icons-container">
-              <!-- 预留一个位置给app 图标 -->
 
               <span>&#x2026;</span>
               <span>&#x25C9;</span>
@@ -78,7 +74,6 @@
       <div class="column" id="third-column">
           <div v-if="selectedItem">
               <div class="icons-container">
-              <!-- 预留一个位置给app 图标 -->
 
               <span>&#x25CB;</span>
               <span>&#x25C9;</span>
@@ -131,32 +126,32 @@ import { DateTime } from 'luxon';
 export default {
   data() {
     return {
-      feeds: [], // 从后端获取的数据将赋值给这里
+      feeds: [], // data obtained from the backend
       feedGroups: [],
       expanededFeedGroups: [],
       selectedFeed: null,
       selectedItem: null,
-      loading: false, // 初始时加载动画不显示
-      loadingStartTime: null, // 加载开始时间
-      loadingTime: null // 定时器对象
+      loading: false,
+      loadingStartTime: null,
+      loadingTime: null,
     };
   },
   mounted() {
-    this.loadingStartTime = new Date(); // 记录加载开始时间
-    this.loading = true; // 显示加载动画
-    this.startLoadingTimer(); // 启动加载计时器
+    this.loadingStartTime = new Date();
+    this.loading = true;
+    this.startLoadingTimer();
     this.getFeeds().then(() => {
-      this.stopLoadingTimer(); // 停止加载计时器
-      this.loading = false; // 隐藏加载动画
+      this.stopLoadingTimer();
+      this.loading = false;
     });
   },
   methods: {
-    // 移除原有的生成数据的方法，由后端提供数据
+    // Remove the existing method for generating data and let the backend provide the data instead
     toggleGroup(index) {
       if (this.expanededFeedGroups.includes(index)) {
-        this.expanededFeedGroups = this.expanededFeedGroups.filter(item => item !== index); // 从 expanededFeedGroups 中移除 index
+        this.expanededFeedGroups = this.expanededFeedGroups.filter(item => item !== index);
       } else {
-        this.expanededFeedGroups.push(index); // 将 index 添加到 expanededFeedGroups
+        this.expanededFeedGroups.push(index);
       }
     },
     showGroupFeeds(group) {
@@ -171,24 +166,22 @@ export default {
     },
     selectFeed(feed) {
       this.selectedFeed = feed;
-      this.selectedItem = null; // 重置选中的条目
+      this.selectedItem = null; // reset the selected item
       this.scrollToTopOfColumn("second-column");
 
     },
     selectItem(item) {
       this.selectedItem = item;
-      // 将第三栏的滚动位置设置为顶部
       this.scrollToTopOfColumn("third-column");
     },
-    // 滚动第三栏到顶部
     scrollToTopOfColumn(column_id) {
       const column = document.getElementById(column_id);
       if (column) {
-        column.scrollTop = 0; // 将滚动位置设置为顶部
+        column.scrollTop = 0; // Set the scroll position to the top
       }
     },
     openLink(link) {
-      // 使用 window.open() 打开新的窗口以导航到链接
+      // open a new window and navigate to a link
       window.open(link, '_blank');
     },
     isEnglish(text) {
@@ -202,20 +195,17 @@ export default {
       return ['font-style', { 'english': this.isEnglish(char), 'chinese': this.isChinese(char) }];
     },
     sanitizeContent(content) {
-      // 将斜杠转义字符进行处理
       if (!(typeof content !== 'string' || content === '')) {
         content = content.replace(/(<img[^>]*>)\s*(\S)/g, '$1<br>$2');
         console.log("fig");
       }
-      // 使用 DOMParser 将 HTML 字符串转换为 DOM 对象
       const parser = new DOMParser();
       const doc = parser.parseFromString(content, 'text/html');
       
-      // 遍历所有图片元素，添加样式以限制宽度
       const images = doc.querySelectorAll('img');
       images.forEach(image => {
-          image.style.maxWidth = '100%'; // 将图片宽度限制为父元素宽度的 100%
-          image.style.height = 'auto'; // 自适应高度
+          image.style.maxWidth = '100%'; // Limit the image width to 100% of the parent element width
+          image.style.height = 'auto'; //
       });
       // 遍历所有ビデオ要素、スタイルを適用して幅を制限
       const videos = doc.querySelectorAll('video');
@@ -223,7 +213,6 @@ export default {
         video.style.maxWidth = '100%'; // 親要素の幅の100%に制限
         video.style.height = 'auto'; // 高さを自動調整
       });
-      // 返回处理后的 HTML 字符串
       return doc.body.innerHTML;
     },
     removeSubstringBetween(str, startChar, endChar) {
@@ -231,21 +220,19 @@ export default {
       return str.replace(regex, '');
     },
 
-  convertUTCToLocalTime(utcTimeList) {
-    // 使用 Date 对象将 UTC 时间转换为当地时间
-    const utcTime = new Date(Date.UTC(...utcTimeList));
+    convertUTCToLocalTime(utcTimeList) {
+      const utcTime = new Date(Date.UTC(...utcTimeList));
 
-    // 使用 luxon 库将时间转换为包含时区名称的本地时间字符串
-    const localTime = DateTime.fromJSDate(utcTime).setZone('local').toFormat('yyyy-MM-dd HH:mm:ss ZZZZ');
+      // convert time to a local time string with the timezone name
+      const localTime = DateTime.fromJSDate(utcTime).setZone('local').toFormat('yyyy-MM-dd HH:mm:ss ZZZZ');
 
-    return localTime;
-},
+      return localTime;
+    },
 
-    // 启动加载计时器
     startLoadingTimer() {
       this.loadingTimer = setInterval(() => {
-        this.loadingTime = this.calculateLoadingTime(); // 更新加载时间
-      }, 1000); // 每秒更新一次加载时间
+        this.loadingTime = this.calculateLoadingTime();
+      }, 1000);
     },
     calculateLoadingTime() {
       if (this.loadingStartTime) {
@@ -257,33 +244,31 @@ export default {
         return '';
       }
     },
-    // 停止加载计时器
     stopLoadingTimer() {
       clearInterval(this.loadingTimer);
     },
     async getFeeds() {
       await axios.get('http://localhost:10000/data')
         .then(response => {
-            // this.feeds = response.data; // 将获取到的数据赋值给 feeds
-            // 将获取到的数据结构调整为与之前生成的数据结构相匹配
+            // this.feeds = response.data;
+            // Adjust the structure of the retrieved data to match the previously generated data structure
             this.feeds = response.data.map(feed => ({
             name: feed.feed.title,
-            group: `Test`, // 根据后端返回的数据设置组名
+            group: `Test`, // Set group names based on the data returned by the backend
             items: feed.entries.map(entry => ({
               name: entry.title,
               link: entry.link,
-              time: entry.published_parsed? entry.published_parsed : "", // 添加安全访问
+              time: entry.published_parsed? entry.published_parsed : "", // Add safe access
               content: entry.content && entry.content.length > 0 ? entry.content[0].value : entry.summary,
             }))
           }));
 
-        // 初始化 feedGroups
         this.feedGroups = [{
-          name: "Test", // 根据后端返回的数据设置组名
+          name: "Test", // Set group names based on the data returned by the backend
           feeds: this.feeds
         }];
 
-        // 默认展开第一个组
+        // Expand the first group by default
         this.expanededFeedGroups.push(0);
             console.log("get");
         })
@@ -299,7 +284,7 @@ export default {
 <style>
 
 /* font */
-/* Bold 字体 */
+/* Bold  */
 @font-face {
   font-family: 'LXGWWenKai-Bold';
   src: url('@/assets/fonts/lxgw-wenkai/LXGWWenKai-Bold.ttf');
@@ -307,7 +292,7 @@ export default {
   font-style: normal;
 }
 
-/* Light 字体 */
+/* Light  */
 @font-face {
   font-family: 'LXGWWenKai-Light';
   src: url('@/assets/fonts/lxgw-wenkai/LXGWWenKai-Light.ttf');
@@ -315,7 +300,7 @@ export default {
   font-style: normal;
 }
 
-/* Regular 字体 */
+/* Regular  */
 @font-face {
   font-family: 'LXGWWenKai-Regular';
   src: url('@/assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf');
@@ -419,8 +404,8 @@ html, body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 1); /* 不透明白色背景 */
-  z-index: 999; /* 确保加载动画在最上层 */
+  background-color: rgba(255, 255, 255, 1);
+  z-index: 999; /* Ensure that the loading animation is on top layer */
   display: flex;
   align-items: center;
   justify-content: center;
