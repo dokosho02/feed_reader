@@ -207,7 +207,7 @@ export default {
           image.style.maxWidth = '100%'; // Limit the image width to 100% of the parent element width
           image.style.height = 'auto'; //
       });
-      // 遍历所有ビデオ要素、スタイルを適用して幅を制限
+      // ビデオ要素、スタイルを適用して幅を制限
       const videos = doc.querySelectorAll('video');
       videos.forEach(video => {
         video.style.maxWidth = '100%'; // 親要素の幅の100%に制限

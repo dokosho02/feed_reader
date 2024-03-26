@@ -1,6 +1,6 @@
 # Feed reader
 
-![image](./images/three-panel.png)
+![image](/images/three-panel.png)
 
 
 This is a demo for now.
