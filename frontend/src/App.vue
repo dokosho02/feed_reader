@@ -1,6 +1,6 @@
 <template>
 
-  <div id="app">
+  <div id="app" :class="{ 'dark-mode': darkMode }" @keydown.left="goBack">
     <!-- loading animation -->
     <div v-if="loading" class="loading-overlay">
       <div class="loading">
@@ -9,14 +9,17 @@
         <div>{{ loadingTime }}</div>
       </div>
     </div>
-    
+    <!-- <component :is="isSmallScreen ? 'full' : 'first-column'"
+               :isSmallScreen="isSmallScreen">
+    </component> -->
       <div class="column" id="first-column">
+        <!-- <div :class="getColumnClass('first-column')" id="first-column"> -->
 
           <div class="icons-container">
 
               <span>&#x2026;</span>
-              <!-- <span>&#x25C9;</span>
-              <span>&#x2605;</span>
+              <span @click="toggleDarkMode">&#x25D0;</span>
+              <!-- <span>&#x2605;</span>
               <span>&#x1F4D6;</span> -->
 
           </div>
@@ -25,23 +28,40 @@
           <span v-for="(group, index) in feedGroups" :key="index">
             <hr>
             <span>
+              <div class="card-wrapper">
+                    <div class="text-wrapper">
                   <span v-if="expanededFeedGroups.includes(index)" class="toggle-icon" @click="toggleGroup(index)">&#x25BE;</span>
                   <!-- test for the 1 st group -->
                   <!-- <span v-else-if="index !== 0" class="toggle-icon"  @click="toggleGroup(index)">&#x25B8;</span> -->
                   <span v-else class="toggle-icon"  @click="toggleGroup(index)">&#x25B8;</span>
 
                   <span v-for="(char, charIndex) in group.name" :key="charIndex" :class="charClasses(char)" @click="showGroupFeeds(group)">{{ char }}</span>
+                </div>
+                <div class="number-wrapper">
+      <span v-if="unreadItemCountGroup(group) > 0" class="number-after-text">{{ unreadItemCountGroup(group) }}</span>
+    </div>
+  </div>
               </span>
               <!-- Feeds -->
               <div v-show="expanededFeedGroups.includes(index)" class="group-content">
                   <hr>
+
+                  
                   <div v-for="(feed, feedIndex) in group.feeds" :key="feedIndex" @click="selectFeed(feed)">
                       <!-- <span v-for="(char, charIndex) in feed.name" :key="charIndex" @click="selectItem(feed)" :class="charClasses(char)">{{ char }}</span> -->
+                      <div class="card-wrapper">
+                        <div class="text-wrapper">
                       <span v-for="(char, charIndex) in feed.name"
                     :key="charIndex"
                     @click="selectItem(feed)"
-                    :class="[charClasses(char), { 'currently_selected': selectedFeed === feed }]"
+                    :class="[charClasses(char),
+                      { 'currently-selected': selectedFeed === feed }]"
                   >{{ char }}</span>
+                </div>
+                <div class="number-wrapper">
+                  <span class="number-after-text" v-if="unreadItemCount(feed) > 0">{{ unreadItemCount(feed) }}</span>
+                </div>
+                </div>
                       <hr v-if="feedIndex !==  group.feeds.length - 1">
                   </div>
               </div>
@@ -49,10 +69,11 @@
       </div>
 
       <!-- items -->
-      <div class="column" id="second-column">
+      <!-- <div :class="getColumnClass('second-column')" id="second-column"> -->
+        <div v-if="!isSmallScreen || (isSmallScreen && currentColumn === 'second-column')" class="column" id="second-column">
           <div v-if="selectedFeed">
               <div class="icons-container">
-
+              <span v-if="isSmallScreen && currentColumn !== 'first-column'" @click="goBack">&#x2190;</span>
               <span>&#x2026;</span>
               <span>&#x25C9;</span>
               <span>&#x2605;</span>
@@ -61,17 +82,20 @@
               </div>
               <div v-for="(item, itemIndex) in selectedFeed.items" :key="itemIndex">
                   <hr>
-                  <div class="item-wrapper">
-                    <div class="name-wrapper">
+                  <div class="card-wrapper">
+                    <div class="text-wrapper">
                       <span v-for="(char, charIndex) in item.name"
                             :key="charIndex"
                             @click="selectItem(item)"
-                            :class="[charClasses(char), { 'currently_selected': selectedItem === item }]">
-                        {{ char }}
+                            :class="[charClasses(char), 
+                            { 'currently-selected': selectedItem === item },
+                            { 'is-read': selectedItem !== item && item.isRead }
+                            ]">
+                            {{ char }}
                       </span>
                     </div>
-                    <div class="time-wrapper">
-                      <span class="relative-time">{{ getRelativeTime(item.time) }}</span>
+                    <div class="number-wrapper">
+                      <span class="number-after-text">{{ getRelativeTime(item.time) }}</span>
                     </div>
                   </div>
               </div>
@@ -79,10 +103,12 @@
       </div>
 
       <!-- contents -->
-      <div class="column" id="third-column">
+      <!-- <div class="column" id="third-column"> -->
+        <div v-if="!isSmallScreen || (isSmallScreen && currentColumn === 'third-column')" class="column" id="third-column">
+
           <div v-if="selectedItem">
               <div class="icons-container">
-
+              <span v-if="isSmallScreen && currentColumn !== 'first-column'" @click="goBack">&#x2190;</span>
               <span>&#x25CB;</span>
               <span>&#x25C9;</span>
               <span>&#x2606;</span>
@@ -117,7 +143,11 @@
                 <div v-if="segment.type === 'text'">{{ segment.text }}</div>
                 <span v-else>{{ segment.text }}</span> -->
               <!-- </template> -->
-              <div v-html="sanitizeContent(selectedItem.content)"></div>
+              <div
+              @dblclick="scrollContent('third-column','up')"
+              @click.exact="scrollContent('third-column', 'down')"
+              @click.shift="scrollContent('third-column','up')"
+              v-html="sanitizeContent(selectedItem.content)"></div>
               <!-- <div v-html="selectedItem.content"></div> -->
               <!-- <p><span v-for="(char, charIndex) in selectedItem.content" :key="charIndex" :class="charClasses(char)">{{ char }}</span></p> -->
               <hr>
@@ -132,7 +162,13 @@
 import ky from 'ky';
 import { DateTime } from 'luxon';
 
+// import FirstColumn from './FirstColumn.vue';
+
 export default {
+  // components: {
+  //   'first-column': FirstColumn,
+  //   // 'first-column-small': FirstColumnSmall
+  // },
   data() {
     return {
       feeds: [], // data obtained from the backend
@@ -143,7 +179,17 @@ export default {
       loading: false,
       loadingStartTime: null,
       loadingTime: null,
+      darkMode: false,
+      isSmallScreen: false,
+      currentColumn: 'first-column',
     };
+  },
+  created() {
+    this.checkDeviceType();
+    window.addEventListener('resize', this.checkDeviceType);
+  },
+  unmounted() {
+    window.removeEventListener('resize', this.checkDeviceType);
   },
   mounted() {
     this.loadingStartTime = new Date();
@@ -152,9 +198,30 @@ export default {
     this.getFeeds().then(() => {
       this.stopLoadingTimer();
       this.loading = false;
+      this.darkMode =  true;
     });
   },
   methods: {
+    checkDeviceType() {
+      this.isSmallScreen = window.innerWidth < 1000;
+    },
+    getColumnClass(columnName) {
+      // 根据条件动态设置 class
+      const classes = {};
+      if (this.isSmallScreen && this.currentColumn === columnName) {
+        classes['full-width'] = true; // 在 isSmallScreen 为 true 且 currentColumn 为指定列名时添加 full-width 类
+      } else {
+        classes[columnName] = true; // 在其他情况下添加 column 类
+      }
+      return classes;
+    },
+    goBack() {
+      if (this.currentColumn === 'third-column') {
+        this.currentColumn = 'second-column'; // 返回第二列
+      } else if (this.currentColumn === 'second-column') {
+        this.currentColumn = 'first-column'; // 返回第一列
+      }
+    },
     // Remove the existing method for generating data and let the backend provide the data instead
     toggleGroup(index) {
       if (this.expanededFeedGroups.includes(index)) {
@@ -176,11 +243,14 @@ export default {
     selectFeed(feed) {
       this.selectedFeed = feed;
       this.selectedItem = null; // reset the selected item
+      this.currentColumn = "second-column"
       this.scrollToTopOfColumn("second-column");
 
     },
     selectItem(item) {
       this.selectedItem = item;
+      this.selectedItem.isRead = true; // update isRead property to true
+      this.currentColumn = "third-column"
       this.scrollToTopOfColumn("third-column");
     },
     scrollToTopOfColumn(column_id) {
@@ -188,6 +258,19 @@ export default {
       if (column) {
         column.scrollTop = 0; // Set the scroll position to the top
       }
+    },
+    unreadItemCount(feed) {
+      return feed.items.filter(item => !item.isRead).length;
+    },
+    unreadItemCountGroup(group) {
+      let count = 0;
+      group.feeds.forEach(feed => {
+        count += feed.items.filter(item => !item.isRead).length;
+      });
+      return count;
+    },
+    toggleDarkMode() {
+      this.darkMode = !this.darkMode; // 切换暗黑模式的状态
     },
     openLink(link) {
       // open a new window and navigate to a link
@@ -249,7 +332,7 @@ export default {
     },
     
     convertUTCToLocalTime(utcTimeList) {
-      console.log(utcTimeList);
+      // console.log(utcTimeList);
       const [year, month, day, hours, minutes, seconds] = utcTimeList;
       const timestamp = Date.UTC(year, month - 1, day, hours, minutes, seconds);
       const localTime = DateTime.fromMillis(timestamp, { zone: 'local' });
@@ -259,6 +342,7 @@ export default {
     getRelativeTime(utcTimeList) {
       const [year, month, day, hours, minutes, seconds] = utcTimeList;
       const timestamp = Date.UTC(year, month - 1, day, hours, minutes, seconds);
+      const secondsDifference = Math.floor((new Date().getTime() - timestamp) / 1000);
 
       const intervals = [
         { label: 'Y', value: 365 * 24 * 60 * 60 },
@@ -270,8 +354,6 @@ export default {
         { label: 's', value: 1 }
       ];
 
-      const secondsDifference = Math.floor((new Date().getTime() - timestamp) / 1000);
-
       for (const interval of intervals) {
         const amount = Math.floor(secondsDifference / interval.value);
         if (amount >= 1) {
@@ -281,6 +363,17 @@ export default {
 
       return '0s';
 
+    },
+    scrollContent(columnID, direction) {
+      const scrollHeight = window.innerHeight*0.9;
+      const thirdColumn = document.getElementById(columnID);
+      if (thirdColumn) {
+        if (direction === 'up') {
+          thirdColumn.scrollTop -= scrollHeight;
+        } else if (direction === 'down') {
+          thirdColumn.scrollTop += scrollHeight;
+        }
+      }
     },
     async getFeeds() {
 
@@ -310,6 +403,8 @@ export default {
           link: entry.link,
           time: entry.published_parsed ? entry.published_parsed : "", // Add safe access
           content: entry.content && entry.content.length > 0 ? entry.content[0].value : entry.summary,
+          isRead: false,
+          isStarred: false,
         }))
       }));
         this.feedGroups = [{
@@ -428,6 +523,11 @@ html, body {
   padding: 10px;
   height: 100%;
 }
+
+.full-width {
+  width: 100%;
+}
+
 /* function */
 .toggle-icon {
   margin-left: auto;
@@ -441,31 +541,50 @@ html, body {
   background-color: #f0f0f0;
 }
 
-.currently_selected {
+.currently-selected {
   font-weight: bold;
 }
 
+.is-read {
+  color: #888; /* set color for read items */
+}
 
-.item-wrapper {
+
+.card-wrapper {
   display: flex;
   justify-content: space-between;
 }
 
-.name-wrapper {
+.text-wrapper {
   text-align: left; /* 左对齐 */
 }
 
-.time-wrapper {
+.number-wrapper {
   padding-left: 10px;
   text-align: right; /* 右对齐 */
 }
 
 
-.relative-time {
+.number-after-text {
   color: #888; /* 设置相对时间的颜色 */
   font-size: 14px; /* 设置相对时间的字体大小 */
   font-style: italic; /* 设置相对时间的斜体样式 */
   text-align: right; /* 将相对时间右对齐 */
+}
+
+/* .icons-container {
+  position: fixed;
+  top: 10px; 
+  right: 10px; 
+  z-index: 999; 
+} */
+
+
+
+
+.dark-mode {
+  background-color: #333; /* 设置暗黑背景色 */
+  color: #ccc; /* 设置暗黑文本颜色 */
 }
 
 

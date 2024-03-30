@@ -44,8 +44,9 @@ yarn serve
 ### database-dependent
 - feed
   - starred/unstarred
+    - [ ] starred mark
   - unread/read
-  - [ ] make read item as gray
+    - [x] make read item as gray
 - item
   - save as epub
   - copy as markdown
@@ -53,7 +54,10 @@ yarn serve
 
 
 ## Todos
-
+- all in js
+- [ ] mobile device
+- [x] back function
+- [x] dark mode/ other skins
 - [ ] add database support to achieve some features
 - [ ] Settings widget
 - [ ] OPML import/export

@@ -22,7 +22,12 @@ RSS_FEED_URLS = [
     "https://rsshub.app/bbc/world-asia",
     "https://feeds.feedblitz.com/baeldung/kotlin",
     "https://rsshub.app/nhk/news_web_easy",
-    "https://biz.trans-suite.jp/feed"
+    "https://biz.trans-suite.jp/feed",
+    "http://www.ithome.com/rss/",
+    "https://chinadigitaltimes.net/chinese/feed",
+    "https://rsshub.app/bing",
+    "https://www.ruanyifeng.com/blog/atom.xml",
+
 ]
 
 @app.get('/data')
