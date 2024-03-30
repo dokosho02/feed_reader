@@ -32,7 +32,7 @@ yarn serve
 ### database-independent
 - feed
   - [x] make selected item bold
-  - [ ] show relative time
+  - [x] show relative time
   - [ ] show item count
 - item
   - [x] open link (core)
@@ -58,3 +58,9 @@ yarn serve
 - [ ] Settings widget
 - [ ] OPML import/export
 - [ ] figure in huxiu, referring to NiceFeed
+
+
+
+## problems
+
+timestamp - month starts from 0
