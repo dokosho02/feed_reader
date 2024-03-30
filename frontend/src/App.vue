@@ -120,7 +120,8 @@
 
 
 <script>
-import axios from 'axios';
+// import axios from 'axios';
+import ky from 'ky';
 import { DateTime } from 'luxon';
 
 export default {
@@ -248,21 +249,35 @@ export default {
       clearInterval(this.loadingTimer);
     },
     async getFeeds() {
-      await axios.get('http://localhost:10000/data')
-        .then(response => {
-            // this.feeds = response.data;
-            // Adjust the structure of the retrieved data to match the previously generated data structure
-            this.feeds = response.data.map(feed => ({
-            name: feed.feed.title,
-            group: `Test`, // Set group names based on the data returned by the backend
-            items: feed.entries.map(entry => ({
-              name: entry.title,
-              link: entry.link,
-              time: entry.published_parsed? entry.published_parsed : "", // Add safe access
-              content: entry.content && entry.content.length > 0 ? entry.content[0].value : entry.summary,
-            }))
-          }));
 
+      // await axios.get('http://localhost:10000/data')
+      // // await ky.get('http://localhost:10000/data')
+      //   .then(response => {
+      //     // console.log(response.status);
+      //     // console.log(response.json);
+      //       // this.feeds = response.data;
+      //       // Adjust the structure of the retrieved data to match the previously generated data structure
+      //       this.feeds = response.data.map(feed => ({
+      //       name: feed.feed.title,
+      //       group: `Test`, // Set group names based on the data returned by the backend
+      //       items: feed.entries.map(entry => ({
+      //         name: entry.title,
+      //         link: entry.link,
+      //         time: entry.published_parsed? entry.published_parsed : "", // Add safe access
+      //         content: entry.content && entry.content.length > 0 ? entry.content[0].value : entry.summary,
+      //       }))
+      //     }));
+      const response = await ky.get('http://localhost:10000/data').json();
+      this.feeds = response.map(feed => ({
+        name: feed.feed.title,
+        group: `Test`, // Set group names based on the data returned by the backend
+        items: feed.entries.map(entry => ({
+          name: entry.title,
+          link: entry.link,
+          time: entry.published_parsed ? entry.published_parsed : "", // Add safe access
+          content: entry.content && entry.content.length > 0 ? entry.content[0].value : entry.summary,
+        }))
+      }));
         this.feedGroups = [{
           name: "Test", // Set group names based on the data returned by the backend
           feeds: this.feeds
@@ -271,10 +286,10 @@ export default {
         // Expand the first group by default
         this.expanededFeedGroups.push(0);
             console.log("get");
-        })
-        .catch(error => {
-          console.error(error);
-        });
+        // })
+        // .catch(error => {
+        //   console.error(error);
+        // });
     }
   }
 };
@@ -331,9 +346,9 @@ div {
   font-family: "Cambria", serif;
 }
 
-div:lang(zh) {
+/* div:lang(zh) {
   font-family: '仿宋', serif;
-}
+} */
 
 
 html, body {
