@@ -61,11 +61,19 @@
               </div>
               <div v-for="(item, itemIndex) in selectedFeed.items" :key="itemIndex">
                   <hr>
-                  <span v-for="(char, charIndex) in item.name"
-                    :key="charIndex"
-                    @click="selectItem(item)"
-                    :class="[charClasses(char), { 'currently_selected': selectedItem === item }]"
-                  >{{ char }}</span>
+                  <div class="item-wrapper">
+                    <div class="name-wrapper">
+                      <span v-for="(char, charIndex) in item.name"
+                            :key="charIndex"
+                            @click="selectItem(item)"
+                            :class="[charClasses(char), { 'currently_selected': selectedItem === item }]">
+                        {{ char }}
+                      </span>
+                    </div>
+                    <div class="time-wrapper">
+                      <span class="relative-time">{{ getRelativeTime(item.time) }}</span>
+                    </div>
+                  </div>
               </div>
           </div>
       </div>
@@ -221,15 +229,6 @@ export default {
       return str.replace(regex, '');
     },
 
-    convertUTCToLocalTime(utcTimeList) {
-      const utcTime = new Date(Date.UTC(...utcTimeList));
-
-      // convert time to a local time string with the timezone name
-      const localTime = DateTime.fromJSDate(utcTime).setZone('local').toFormat('yyyy-MM-dd HH:mm:ss ZZZZ');
-
-      return localTime;
-    },
-
     startLoadingTimer() {
       this.loadingTimer = setInterval(() => {
         this.loadingTime = this.calculateLoadingTime();
@@ -240,13 +239,48 @@ export default {
         const currentTime = new Date();
         const milliseconds = currentTime - this.loadingStartTime;
         const seconds = Math.floor(milliseconds / 1000);
-        return `Time: ${seconds}s`;
+        return `${seconds}s`;
       } else {
         return '';
       }
     },
     stopLoadingTimer() {
       clearInterval(this.loadingTimer);
+    },
+    
+    convertUTCToLocalTime(utcTimeList) {
+      console.log(utcTimeList);
+      const [year, month, day, hours, minutes, seconds] = utcTimeList;
+      const timestamp = Date.UTC(year, month - 1, day, hours, minutes, seconds);
+      const localTime = DateTime.fromMillis(timestamp, { zone: 'local' });
+      const formattedLocalTime = localTime.toFormat('yyyy-MM-dd HH:mm:ss ZZZZ');
+      return formattedLocalTime;
+    },
+    getRelativeTime(utcTimeList) {
+      const [year, month, day, hours, minutes, seconds] = utcTimeList;
+      const timestamp = Date.UTC(year, month - 1, day, hours, minutes, seconds);
+
+      const intervals = [
+        { label: 'Y', value: 365 * 24 * 60 * 60 },
+        { label: 'M', value: 30 * 24 * 60 * 60 },
+        { label: 'w', value: 7 * 24 * 60 * 60 },
+        { label: 'd', value: 24 * 60 * 60 },
+        { label: 'h', value: 60 * 60 },
+        { label: 'm', value: 60 },
+        { label: 's', value: 1 }
+      ];
+
+      const secondsDifference = Math.floor((new Date().getTime() - timestamp) / 1000);
+
+      for (const interval of intervals) {
+        const amount = Math.floor(secondsDifference / interval.value);
+        if (amount >= 1) {
+          return `${amount}${interval.label}`;
+        }
+      }
+
+      return '0s';
+
     },
     async getFeeds() {
 
@@ -410,6 +444,30 @@ html, body {
 .currently_selected {
   font-weight: bold;
 }
+
+
+.item-wrapper {
+  display: flex;
+  justify-content: space-between;
+}
+
+.name-wrapper {
+  text-align: left; /* 左对齐 */
+}
+
+.time-wrapper {
+  padding-left: 10px;
+  text-align: right; /* 右对齐 */
+}
+
+
+.relative-time {
+  color: #888; /* 设置相对时间的颜色 */
+  font-size: 14px; /* 设置相对时间的字体大小 */
+  font-style: italic; /* 设置相对时间的斜体样式 */
+  text-align: right; /* 将相对时间右对齐 */
+}
+
 
 /* loading */
 
