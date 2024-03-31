@@ -40,6 +40,12 @@ yarn serve
     - [ ] render tag by tag with lang in different fonts
   - lang
   - translation
+  - 
+- content
+  - [x] increase/decrease fontsize
+  - [x] previous/next item
+  - [x] previous/next page
+  - [x] back to top
 
 ### database-dependent
 - feed

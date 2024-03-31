@@ -26,7 +26,7 @@
 
           <!-- Display groups -->
           <span v-for="(group, index) in feedGroups" :key="index">
-            <hr>
+            <!-- <hr> -->
             <span>
               <div class="card-wrapper">
                     <div class="text-wrapper">
@@ -81,7 +81,7 @@
 
               </div>
               <div v-for="(item, itemIndex) in selectedFeed.items" :key="itemIndex">
-                  <hr>
+                  <!-- <hr> -->
                   <div class="card-wrapper">
                     <div class="text-wrapper">
                       <span v-for="(char, charIndex) in item.name"
@@ -98,6 +98,8 @@
                       <span class="number-after-text">{{ getRelativeTime(item.time) }}</span>
                     </div>
                   </div>
+                  <hr v-if="itemIndex !==  selectedFeed.items.length - 1">
+
               </div>
           </div>
       </div>
@@ -111,6 +113,14 @@
               <span v-if="isSmallScreen && currentColumn !== 'first-column'" @click="goBack">&#x2190;</span>
               <span>&#x25CB;</span>
               <span>&#x25C9;</span>
+              <span @click="goToPreviousArticle" :class="{ 'disabled': isPreviousArticleDisabled }">&#x25B2;</span>
+              <span @click="goToNextArticle" :class="{ 'disabled': isNextArticleDisabled }">&#x25BC;</span>
+              <span @click="scrollContent('third-column', 'up')">&#x2397;</span>
+              <span @click="scrollContent('third-column', 'down')">&#x2398;</span>
+              <span @click="scrollToTopOfColumn('third-column')">&#x1F51D;</span>
+              <span @click="adjustFontSize(1)">&#x1F5DA;</span>
+              <span @click="adjustFontSize(-1)">&#x1F5DB;</span>
+
               <span>&#x2606;</span>
               <!-- <span>&#x1F56E;</span> -->
               <span>&#x1F4D6;</span>
@@ -118,7 +128,7 @@
               <span @click="openLink(selectedItem.link)">&#x1F310;</span>
 
               </div>
-              <hr>
+              <!-- <hr> -->
               <!-- <img src="https://img.huxiucdn.com/article/cover/202403/18/212915139133.jpg" style="width: auto;"> -->
               <!-- <h2>{{ selectedItem.name }}</h2> -->
               <!-- <a :href="selectedItem.link" target="_blank" class="link-style">Web</a> -->
@@ -144,9 +154,11 @@
                 <span v-else>{{ segment.text }}</span> -->
               <!-- </template> -->
               <div
-              @dblclick="scrollContent('third-column','up')"
+              @touchstart="handleTouchStart('third-column')"
               @click.exact="scrollContent('third-column', 'down')"
               @click.shift="scrollContent('third-column','up')"
+
+              :style="{ fontSize: contentFontSize + 'px' }"
               v-html="sanitizeContent(selectedItem.content)"></div>
               <!-- <div v-html="selectedItem.content"></div> -->
               <!-- <p><span v-for="(char, charIndex) in selectedItem.content" :key="charIndex" :class="charClasses(char)">{{ char }}</span></p> -->
@@ -182,12 +194,14 @@ export default {
       darkMode: false,
       isSmallScreen: false,
       currentColumn: 'first-column',
+      contentFontSize: 16,
     };
   },
   created() {
     this.checkDeviceType();
     window.addEventListener('resize', this.checkDeviceType);
   },
+  
   unmounted() {
     window.removeEventListener('resize', this.checkDeviceType);
   },
@@ -200,6 +214,18 @@ export default {
       this.loading = false;
       this.darkMode =  true;
     });
+  },
+  computed: {
+    // 添加计算属性来判断是否禁用上一篇文章图标
+    isPreviousArticleDisabled() {
+      const currentItemIndex = this.getCurrentArticleIndex();
+      return currentItemIndex <= 0;
+    },
+    // 添加计算属性来判断是否禁用下一篇文章图标
+    isNextArticleDisabled() {
+      const currentItemIndex = this.getCurrentArticleIndex();
+      return currentItemIndex === -1 || currentItemIndex === this.selectedFeed.items.length - 1;
+    },
   },
   methods: {
     checkDeviceType() {
@@ -330,6 +356,8 @@ export default {
     stopLoadingTimer() {
       clearInterval(this.loadingTimer);
     },
+
+    
     
     convertUTCToLocalTime(utcTimeList) {
       // console.log(utcTimeList);
@@ -373,6 +401,45 @@ export default {
         } else if (direction === 'down') {
           thirdColumn.scrollTop += scrollHeight;
         }
+      }
+    },
+    adjustFontSize(increment) {
+  this.contentFontSize += increment; // 增加或减小字号大小
+},
+    getCurrentArticleIndex() {
+    if (!this.selectedItem || !this.selectedFeed) {
+      return -1;
+    }
+    const currentItemIndex = this.selectedFeed.items.findIndex(item => item === this.selectedItem);
+    return currentItemIndex;
+  },
+  // 添加方法来加载下一篇文章的内容
+  goToNextArticle() {
+    const currentItemIndex = this.getCurrentArticleIndex();
+    if (currentItemIndex === -1 || currentItemIndex === this.selectedFeed.items.length - 1) {
+      // 如果当前文章不存在或者已经是最后一篇文章，则无需进行操作
+      return;
+    }
+    // 找到下一篇文章
+    const nextItem = this.selectedFeed.items[currentItemIndex + 1];
+    // 将下一篇文章设置为当前选定文章
+    this.selectItem(nextItem);
+  },
+  goToPreviousArticle() {
+    const currentItemIndex = this.getCurrentArticleIndex();
+    if (currentItemIndex <= 0) {
+      // 如果当前文章不存在或者已经是第一篇文章，则无需进行操作
+      return;
+    }
+    // 找到上一篇文章
+    const previousItem = this.selectedFeed.items[currentItemIndex - 1];
+    // 将上一篇文章设置为当前选定文章
+    this.selectItem(previousItem);
+  },
+    handleTouchStart(event, columnID) {
+      // 检查触摸点的数量
+      if (event.touches && event.touches.length === 2) {
+        this.scrollContent(columnID, "up");
       }
     },
     async getFeeds() {
@@ -572,15 +639,34 @@ html, body {
   text-align: right; /* 将相对时间右对齐 */
 }
 
-/* .icons-container {
+.icons-container {
   position: fixed;
-  top: 10px; 
-  right: 10px; 
-  z-index: 999; 
-} */
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  z-index: 998;
+  background-color: #fff; /* 设置背景颜色 */
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
+}
 
+.icons-container span {
+  margin-right: 20px;
+  font-size: 24px;
+}
 
+.dark-mode .icons-container {
+  background-color: #333; /* 设置暗黑背景颜色 */
+  color: #ccc; /* 设置暗黑文本颜色 */
+}
 
+.disabled {
+  color: #888;
+  opacity: 0.6;
+}
 
 .dark-mode {
   background-color: #333; /* 设置暗黑背景色 */
